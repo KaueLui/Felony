@@ -4,7 +4,7 @@ This project is an NFT generator with a graphical interface. It allows you to cr
 
 ## Project Structure
 - `src/`: Source code of the application
-- `assets/example_layers/`: Example layers for NFT generation
+- `assets/`: Example layers for NFT generation
 - `output/`: Folder where the NFTs and metadata are saved
 - `requirements.txt`: Project dependencies
 
@@ -13,6 +13,13 @@ This project is an NFT generator with a graphical interface. It allows you to cr
 2. Run the program: `python src/main.py or py src/main.py`.
 3. Add layers, select the output folder, and click "Generate NFTs".
 
+## Flags
+1. `python generator.py assets/example_layers output_dir -u`
+2. `python generator.py assets/example_layers output_dir -e`
+
+`-u`: generates only unique combinations.
+`-e`: generates an exotic combination
+ 
 ## Requirements
 - Python 3.x
 - Pillow
