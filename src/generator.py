@@ -1,7 +1,7 @@
 import os
 import json
+import random
 from PIL import Image
-import itertools
 from utils import create_metadata, create_nft_image
 
 class NFTGenerator:
@@ -15,18 +15,19 @@ class NFTGenerator:
         # Carregar todos os arquivos das camadas
         layer_files = self.load_layer_files(layers)
         
-        # Inicializar o contador de NFTs
         nft_id = 1
-        for combination in itertools.product(*layer_files):
-            if max_nfts is not None and nft_id > max_nfts:
-                break  # Parar quando atingir o número máximo de NFTs
+        while nft_id <= max_nfts:  # Gerar até atingir o número máximo de NFTs
+            # Gerar uma combinação aleatória selecionando um item aleatório de cada camada
+            combination = [random.choice(layer) for layer in layer_files]
             
+            # Definir caminhos para salvar a imagem e o metadata
             output_path = os.path.join(image_output_dir, f"NFT_{nft_id}.png")
             metadata_path = os.path.join(metadata_output_dir, f"NFT_{nft_id}.json")
             
             # Log do progresso
             print(f"Gerando NFT {nft_id}...")
 
+            # Criar a imagem e o arquivo de metadados
             create_nft_image(combination, output_path)
             metadata = create_metadata(nft_id, combination)
             
@@ -34,7 +35,7 @@ class NFTGenerator:
                 json.dump(metadata, f, indent=4)
             
             nft_id += 1
-        
+
         print("Geração de NFTs concluída.")
 
     def load_layer_files(self, layers):
