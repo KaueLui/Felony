@@ -1,8 +1,7 @@
 import os
-import json
 import random
 import itertools
-import argparse
+import json
 from PIL import Image
 from utils import create_metadata, create_nft_image
 
@@ -21,7 +20,7 @@ class NFTGenerator:
         self.unique_only = unique_only
         self.exotic_only = exotic_only
 
-    def generate(self, layers, output_dir, max_nfts=None):
+    def generate(self, layers, output_dir, max_nfts=None, callback=None):
         # Diretórios de saída para imagens e metadados
         image_output_dir = os.path.join(output_dir, "nfts")
         metadata_output_dir = os.path.join(output_dir, "metadata")
@@ -39,21 +38,21 @@ class NFTGenerator:
             for combination in combinations:
                 if nft_id > max_nfts:
                     break
-                self.create_nft(nft_id, combination, image_output_dir, metadata_output_dir)
+                self.create_nft(nft_id, combination, image_output_dir, metadata_output_dir, callback)
                 nft_id += 1
 
         elif self.exotic_only:
             # Modo exótico: selecionar apenas itens da raridade 'Exotic'
             combinations = [random.choice(layer_files["Exotic"]) for layer in layer_files]
             while nft_id <= max_nfts:
-                self.create_nft(nft_id, combinations, image_output_dir, metadata_output_dir)
+                self.create_nft(nft_id, combinations, image_output_dir, metadata_output_dir, callback)
                 nft_id += 1
 
         else:
             # Modo padrão aleatório, considerando todas as raridades
             while nft_id <= max_nfts:
                 combination = [self.select_random_item_with_rarity(layer) for layer in layer_files]
-                self.create_nft(nft_id, combination, image_output_dir, metadata_output_dir)
+                self.create_nft(nft_id, combination, image_output_dir, metadata_output_dir, callback)
                 nft_id += 1
 
         print("Geração de NFTs concluída.")
@@ -91,7 +90,7 @@ class NFTGenerator:
             else:
                 raise ValueError("Nenhum item disponível para essa camada.")
 
-    def create_nft(self, nft_id, combination, image_output_dir, metadata_output_dir):
+    def create_nft(self, nft_id, combination, image_output_dir, metadata_output_dir, callback):
         # Caminhos de saída para imagem e metadados
         output_path = os.path.join(image_output_dir, f"NFT_{nft_id}.png")
         metadata_path = os.path.join(metadata_output_dir, f"NFT_{nft_id}.json")
@@ -106,20 +105,6 @@ class NFTGenerator:
         with open(metadata_path, "w") as f:
             json.dump(metadata, f, indent=4)
 
-
-def main():
-    parser = argparse.ArgumentParser(description="Gerador de NFTs com suporte a raridades e exclusividade")
-    parser.add_argument("layers", help="Diretório das camadas")
-    parser.add_argument("output_dir", help="Diretório de saída para os NFTs gerados")
-    parser.add_argument("-u", "--unique", action="store_true", help="Gera apenas combinações únicas, sem aleatoriedade")
-    parser.add_argument("-e", "--exotic", action="store_true", help="Gera apenas combinações com itens da raridade 'Exotic'")
-    parser.add_argument("-n", "--max_nfts", type=int, default=10, help="Número máximo de NFTs a serem geradas")
-    
-    args = parser.parse_args()
-
-    # Instancia o gerador com base nas flags
-    generator = NFTGenerator(unique_only=args.unique, exotic_only=args.exotic)
-    generator.generate(args.layers, args.output_dir, max_nfts=args.max_nfts)
-
-if __name__ == "__main__":
-    main()
+        # Se o callback for fornecido, chamar a função de atualização com o caminho da imagem gerada
+        if callback:
+            callback(output_path)
