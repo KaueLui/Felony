@@ -1,2 +1,4 @@
 __pycache__/
 output_nfts/
+node_modules/
+package-lock.json
