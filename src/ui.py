@@ -1,8 +1,8 @@
 import os
+import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from generator import NFTGenerator
-
 
 class NFTGeneratorApp:
     def __init__(self, root):
@@ -34,7 +34,7 @@ class NFTGeneratorApp:
         self.max_nfts_entry = tk.Entry(self.root)
         self.max_nfts_entry.pack(pady=5)
         
-        generate_button = tk.Button(self.root, text="Gerar NFTs", command=self.generate_nfts)
+        generate_button = tk.Button(self.root, text="Gerar NFTs", command=self.start_generation_thread)
         generate_button.pack(pady=20)
 
     def add_layer(self):
@@ -59,6 +59,11 @@ class NFTGeneratorApp:
         self.output_dir = filedialog.askdirectory(title="Selecionar Pasta de Saída")
         if self.output_dir:
             self.output_label.config(text=f"Pasta de Saída: {self.output_dir}")
+
+    def start_generation_thread(self):
+        # Iniciar o processo de geração em uma nova thread para não congelar a interface
+        thread = threading.Thread(target=self.generate_nfts)
+        thread.start()
 
     def generate_nfts(self):
         if not self.output_dir:

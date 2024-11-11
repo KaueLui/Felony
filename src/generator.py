@@ -15,14 +15,18 @@ class NFTGenerator:
         # Carregar todos os arquivos das camadas
         layer_files = self.load_layer_files(layers)
         
-        # Combinar camadas e gerar NFTs
+        # Inicializar o contador de NFTs
         nft_id = 1
         for combination in itertools.product(*layer_files):
             if max_nfts is not None and nft_id > max_nfts:
-                break  # Para quando atingir o número máximo de NFTs
+                break  # Parar quando atingir o número máximo de NFTs
             
             output_path = os.path.join(image_output_dir, f"NFT_{nft_id}.png")
             metadata_path = os.path.join(metadata_output_dir, f"NFT_{nft_id}.json")
+            
+            # Log do progresso
+            print(f"Gerando NFT {nft_id}...")
+
             create_nft_image(combination, output_path)
             metadata = create_metadata(nft_id, combination)
             
@@ -30,6 +34,8 @@ class NFTGenerator:
                 json.dump(metadata, f, indent=4)
             
             nft_id += 1
+        
+        print("Geração de NFTs concluída.")
 
     def load_layer_files(self, layers):
         layer_files = []
