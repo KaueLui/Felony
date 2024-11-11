@@ -1,6 +1,7 @@
 __pycache__/
 assets/
 output_nfts/
+output/
 node_modules
 package-lock.json
 json/

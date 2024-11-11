@@ -64,14 +64,22 @@ class NFTGeneratorApp:
 
     def add_layer(self):
         # Permite a seleção de múltiplas pastas
-        layer_paths = filedialog.askdirectory(title="Selecionar Pasta da Camada")
-        if layer_paths:
-            if isinstance(layer_paths, str):
-                layer_paths = [layer_paths]  # Se for apenas uma pasta, transforma em lista
-            for layer_path in layer_paths:
-                layer_name = os.path.basename(layer_path)
-                self.layer_dirs.append({"name": layer_name, "path": layer_path})
-                self.layer_list.insert(tk.END, f"Camada: {layer_name} - Pasta: {layer_path}")
+        layer_path = filedialog.askdirectory(title="Selecionar Pasta da Camada")
+        if layer_path:
+            layer_name = os.path.basename(layer_path)
+            layer_items = self.load_items_from_directory(layer_path)
+            self.layer_dirs.append({"name": layer_name, "path": layer_path, "items": layer_items})
+            self.layer_list.insert(tk.END, f"Camada: {layer_name} - Pasta: {layer_path}")
+
+    def load_items_from_directory(self, directory):
+        # Carrega itens a partir do diretório e aplica uma estrutura com 'rarity' fictícia
+        items = []
+        for filename in os.listdir(directory):
+            if filename.endswith(('.png', '.jpg', '.jpeg')):  # Filtra apenas arquivos de imagem
+                # Exemplo de atribuição de raridade: você pode alterar conforme a necessidade
+                rarity = "Exotic" if "exotic" in filename.lower() else "Common"
+                items.append({"filename": filename, "rarity": rarity})
+        return items
 
     def remove_layer(self):
         # Remove camadas selecionadas
@@ -120,10 +128,43 @@ class NFTGeneratorApp:
         # Verifica se o gerador de NFTs está sendo corretamente inicializado
         self.generator = NFTGenerator(unique_only=unique_only, exotic_only=exotic_only)
         try:
-            self.generator.generate(self.layer_dirs, self.output_dir, max_nfts=max_nfts, callback=self.update_preview)
+            # Filtra as camadas com base nos filtros selecionados
+            filtered_layers = self.filter_layers(unique_only, exotic_only)
+
+            # Gera NFTs com as camadas filtradas
+            self.generator.generate(filtered_layers, self.output_dir, max_nfts=max_nfts, callback=self.update_preview)
             messagebox.showinfo("Sucesso", "NFTs geradas com sucesso!")
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao gerar NFTs: {e}")
+
+    def filter_layers(self, unique_only, exotic_only):
+        # Filtra as camadas para conter apenas itens de raridade exótica ou a mesma raridade
+        filtered_layers = []
+
+        if exotic_only:
+            # Filtra apenas camadas de itens exóticos
+            for layer in self.layer_dirs:
+                layer_items = [
+                    item for item in layer["items"] if item["rarity"] == "Exotic"
+                ]
+                if layer_items:
+                    filtered_layers.append({"name": layer["name"], "items": layer_items})
+        elif unique_only:
+            # Filtra camadas para conter apenas itens da mesma raridade
+            # Usamos a primeira raridade encontrada como referência
+            for layer in self.layer_dirs:
+                if layer["items"]:
+                    base_rarity = layer["items"][0]["rarity"]
+                    layer_items = [
+                        item for item in layer["items"] if item["rarity"] == base_rarity
+                    ]
+                    if layer_items:
+                        filtered_layers.append({"name": layer["name"], "items": layer_items})
+        else:
+            # Sem filtro, retorna as camadas como estão
+            filtered_layers = self.layer_dirs
+
+        return filtered_layers
 
     def update_preview(self, image_path):
         # Atualiza a pré-visualização com a nova imagem gerada
@@ -151,8 +192,8 @@ class NFTGeneratorApp:
 
         file_path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
         if file_path:
-            with open(file_path, 'w') as f:
-                json.dump(config, f, indent=4)
+            with open(file_path, "w") as f:
+                json.dump(config, f)
             messagebox.showinfo("Sucesso", "Configurações salvas com sucesso!")
 
     def load_config(self):
@@ -160,33 +201,30 @@ class NFTGeneratorApp:
         file_path = filedialog.askopenfilename(filetypes=[("JSON files", "*.json")])
         if file_path:
             try:
-                with open(file_path, 'r') as f:
+                with open(file_path, "r") as f:
                     config = json.load(f)
-                
-                # Carregar as camadas
-                self.layer_dirs = [{"name": layer["name"], "path": layer["path"]} for layer in config.get("layers", [])]
+
+                # Carregar camadas
+                self.layer_dirs = [
+                    {"name": layer["name"], "path": layer["path"], "items": self.load_items_from_directory(layer["path"])}
+                    for layer in config.get("layers", [])
+                ]
                 self.layer_list.delete(0, tk.END)
                 for layer in self.layer_dirs:
                     self.layer_list.insert(tk.END, f"Camada: {layer['name']} - Pasta: {layer['path']}")
 
-                # Carregar o diretório de saída
+                # Carregar diretório de saída
                 self.output_dir = config.get("output_dir", "")
                 self.output_label.config(text=f"Pasta de Saída: {self.output_dir}")
 
-                # Carregar a quantidade máxima de NFTs
+                # Carregar as outras configurações
                 self.max_nfts_entry.delete(0, tk.END)
                 self.max_nfts_entry.insert(0, config.get("max_nfts", ""))
 
-                # Carregar as opções de filtros
                 self.unique_var.set(config.get("unique_only", False))
                 self.exotic_var.set(config.get("exotic_only", False))
 
                 messagebox.showinfo("Sucesso", "Configurações carregadas com sucesso!")
+
             except Exception as e:
                 messagebox.showerror("Erro", f"Erro ao carregar configurações: {e}")
-
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = NFTGeneratorApp(root)
-    root.mainloop()

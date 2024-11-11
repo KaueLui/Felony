@@ -6,7 +6,6 @@ from PIL import Image
 from utils import create_metadata, create_nft_image
 
 class NFTGenerator:
-    # Definir as probabilidades para cada raridade
     rarity_probabilities = {
         "Common": 0.50,
         "Rare": 0.25,
@@ -21,37 +20,44 @@ class NFTGenerator:
         self.exotic_only = exotic_only
 
     def generate(self, layers, output_dir, max_nfts=None, callback=None):
-        # Diretórios de saída para imagens e metadados
         image_output_dir = os.path.join(output_dir, "nfts")
         metadata_output_dir = os.path.join(output_dir, "metadata")
         os.makedirs(image_output_dir, exist_ok=True)
         os.makedirs(metadata_output_dir, exist_ok=True)
         
-        # Carregar arquivos das camadas considerando raridade
         layer_files = self.load_layer_files_with_rarity(layers)
-
+        print("Layer files loaded:", layer_files)  # Debug: verifica se os arquivos foram carregados corretamente
+        
         nft_id = 1
 
         if self.unique_only:
-            # Modo de combinações únicas sem aleatoriedade
-            combinations = itertools.product(*[layer for layer in layer_files.values()])
-            for combination in combinations:
-                if nft_id > max_nfts:
-                    break
-                self.create_nft(nft_id, combination, image_output_dir, metadata_output_dir, callback)
-                nft_id += 1
+            for rarity in self.rarity_probabilities.keys():
+                # Verificação se cada camada contém ao menos um item na raridade atual
+                if not all(rarity in layer and layer[rarity] for layer in layer_files):
+                    print(f"Erro: Camada com raridade '{rarity}' está vazia em uma ou mais camadas.")
+                    continue  # Pula para a próxima raridade
+                
+                # Geração de combinações para a raridade atual
+                combinations = itertools.product(*[layer[rarity] for layer in layer_files])
+                for combination in combinations:
+                    if nft_id > max_nfts:
+                        break
+                    self.create_nft(nft_id, combination, image_output_dir, metadata_output_dir, callback)
+                    nft_id += 1
 
         elif self.exotic_only:
-            # Modo exótico: selecionar apenas itens da raridade 'Exotic'
-            combinations = [random.choice(layer_files["Exotic"]) for layer in layer_files]
+            # Seleciona um item aleatório da raridade "Exotic" para cada camada, caso exista
+            combinations = [random.choice(layer["Exotic"]) for layer in layer_files if "Exotic" in layer and layer["Exotic"]]
+            if not combinations:
+                raise ValueError("Nenhum item exótico encontrado em alguma das camadas.")
             while nft_id <= max_nfts:
                 self.create_nft(nft_id, combinations, image_output_dir, metadata_output_dir, callback)
                 nft_id += 1
 
         else:
-            # Modo padrão aleatório, considerando todas as raridades
             while nft_id <= max_nfts:
                 combination = [self.select_random_item_with_rarity(layer) for layer in layer_files]
+                print("Combination:", combination)  # Debug: imprime a combinação para verificação
                 self.create_nft(nft_id, combination, image_output_dir, metadata_output_dir, callback)
                 nft_id += 1
 
@@ -61,7 +67,6 @@ class NFTGenerator:
         layer_files = []
         for layer in layers:
             rarity_files = {}
-            # Para cada raridade, verificar se há uma pasta correspondente e carregar arquivos
             for rarity in self.rarity_probabilities.keys():
                 rarity_path = os.path.join(layer["path"], rarity)
                 if os.path.isdir(rarity_path):
@@ -72,39 +77,32 @@ class NFTGenerator:
         return layer_files
 
     def select_random_item_with_rarity(self, layer_rarity_files):
-        # Seleciona a raridade com base nas probabilidades definidas
         rarity = random.choices(
             population=list(self.rarity_probabilities.keys()),
             weights=list(self.rarity_probabilities.values()),
             k=1
         )[0]
         
-        # Seleciona um item aleatório da raridade escolhida
         if rarity in layer_rarity_files and layer_rarity_files[rarity]:
             return random.choice(layer_rarity_files[rarity])
         else:
-            # Se não houver itens na raridade selecionada, selecionar outra raridade disponível
             available_rarities = [r for r in layer_rarity_files if layer_rarity_files[r]]
             if available_rarities:
                 return random.choice(layer_rarity_files[random.choice(available_rarities)])
             else:
-                raise ValueError("Nenhum item disponível para essa camada.")
+                raise ValueError("Nenhum item disponível para essa camada e raridade.")
 
     def create_nft(self, nft_id, combination, image_output_dir, metadata_output_dir, callback):
-        # Caminhos de saída para imagem e metadados
         output_path = os.path.join(image_output_dir, f"NFT_{nft_id}.png")
         metadata_path = os.path.join(metadata_output_dir, f"NFT_{nft_id}.json")
 
-        # Log do progresso
         print(f"Gerando NFT {nft_id}...")
 
-        # Criar a imagem e o arquivo de metadados
         create_nft_image(combination, output_path)
         metadata = create_metadata(nft_id, combination)
         
         with open(metadata_path, "w") as f:
             json.dump(metadata, f, indent=4)
 
-        # Se o callback for fornecido, chamar a função de atualização com o caminho da imagem gerada
         if callback:
             callback(output_path)
