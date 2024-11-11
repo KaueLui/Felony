@@ -1,8 +1,5 @@
 __pycache__/
-assets/Background/
-assets/Eye/
-assets/Hair/
-assets/Head/
+assets/
 assets/T-shirt/
 output_nfts/
 node_modules

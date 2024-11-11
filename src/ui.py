@@ -2,13 +2,15 @@ import os
 import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from PIL import Image, ImageTk  # Import necessário para manipulação da imagem
 from generator import NFTGenerator
 
 class NFTGeneratorApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Gerador de NFTs")
+        self.root.title("Felony | Gerador de NFTs")
         self.layer_dirs = []
+        self.output_dir = ""
         self.generator = NFTGenerator()
         self.setup_ui()
 
@@ -36,6 +38,12 @@ class NFTGeneratorApp:
         
         generate_button = tk.Button(self.root, text="Gerar NFTs", command=self.start_generation_thread)
         generate_button.pack(pady=20)
+
+        # Campo de visualização da última imagem gerada
+        self.preview_label = tk.Label(self.root, text="Pré-visualização da Última NFT Gerada:")
+        self.preview_label.pack(pady=5)
+        self.preview_canvas = tk.Label(self.root)
+        self.preview_canvas.pack(pady=10)
 
     def add_layer(self):
         # Seleciona a pasta de uma camada
@@ -81,3 +89,33 @@ class NFTGeneratorApp:
         # Chama o gerador de NFTs com o limite especificado
         self.generator.generate(self.layer_dirs, self.output_dir, max_nfts=max_nfts)
         messagebox.showinfo("Sucesso", "NFTs geradas com sucesso!")
+
+        # Atualiza a pré-visualização com a última NFT gerada
+        self.show_last_generated_image()
+
+    def show_last_generated_image(self):
+        # Encontra o último arquivo de imagem gerado no diretório de saída
+        try:
+            nfts_dir = os.path.join(self.output_dir, "nfts")
+            images = [f for f in os.listdir(nfts_dir) if f.endswith(".png")]
+            if not images:
+                return
+
+            last_image_path = os.path.join(nfts_dir, sorted(images)[-1])
+            
+            # Carrega e redimensiona a imagem para caber no canvas
+            image = Image.open(last_image_path)
+            image = image.resize((200, 200), Image.LANCZOS)  # Ajuste o tamanho conforme necessário
+            image_tk = ImageTk.PhotoImage(image)
+
+            # Atualiza o canvas de pré-visualização com a nova imagem
+            self.preview_canvas.config(image=image_tk)
+            self.preview_canvas.image = image_tk
+
+        except Exception as e:
+            print(f"Erro ao carregar a imagem: {e}")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = NFTGeneratorApp(root)
+    root.mainloop()
