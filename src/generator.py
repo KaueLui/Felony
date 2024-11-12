@@ -26,18 +26,21 @@ class NFTGenerator:
         os.makedirs(metadata_output_dir, exist_ok=True)
         
         layer_files = self.load_layer_files_with_rarity(layers)
-        print("Layer files loaded:", layer_files)  # Debug: verifica se os arquivos foram carregados corretamente
+
+        # Exibição simplificada das camadas e raridades carregadas
+        print("Camadas e raridades carregadas:")
+        for i, layer in enumerate(layer_files):
+            raridades_disponiveis = [raridade for raridade in layer.keys() if layer[raridade]]
+            print(f"Camada {i + 1}: {raridades_disponiveis}")
         
         nft_id = 1
 
         if self.unique_only:
             for rarity in self.rarity_probabilities.keys():
-                # Verificação se cada camada contém ao menos um item na raridade atual
                 if not all(rarity in layer and layer[rarity] for layer in layer_files):
                     print(f"Erro: Camada com raridade '{rarity}' está vazia em uma ou mais camadas.")
-                    continue  # Pula para a próxima raridade
+                    continue
                 
-                # Geração de combinações para a raridade atual
                 combinations = itertools.product(*[layer[rarity] for layer in layer_files])
                 for combination in combinations:
                     if nft_id > max_nfts:
@@ -46,7 +49,6 @@ class NFTGenerator:
                     nft_id += 1
 
         elif self.exotic_only:
-            # Seleciona um item aleatório da raridade "Exotic" para cada camada, caso exista
             combinations = [random.choice(layer["Exotic"]) for layer in layer_files if "Exotic" in layer and layer["Exotic"]]
             if not combinations:
                 raise ValueError("Nenhum item exótico encontrado em alguma das camadas.")
@@ -57,7 +59,7 @@ class NFTGenerator:
         else:
             while nft_id <= max_nfts:
                 combination = [self.select_random_item_with_rarity(layer) for layer in layer_files]
-                print("Combination:", combination)  # Debug: imprime a combinação para verificação
+                print("Combinação gerada:", [(item["name"], item["rarity"]) for item in combination]) # Debug: imprime a combinação para verificação
                 self.create_nft(nft_id, combination, image_output_dir, metadata_output_dir, callback)
                 nft_id += 1
 
