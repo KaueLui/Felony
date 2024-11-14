@@ -57,7 +57,7 @@ class NFTGenerator:
         # Gera o arquivo CSV com todos os metadados
         csv_path = os.path.join(output_dir, "metadata.csv")
         with open(csv_path, "w", newline='') as csvfile:
-            fieldnames = ["name", "description", "image", "attributes"]
+            fieldnames = ["name", "description", "image", "attributes", "external_url"]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             for metadata in metadata_list:
@@ -98,7 +98,8 @@ class NFTGenerator:
         metadata = {
             "name": f"NFT #{nft_id}",
             "description": "Uma NFT única",
-            "image": f"ipfs://NFT_{nft_id}.png",
+            "image": f"https://example.com/image/{nft_id}.png",
+            "external_url": f"https://example.com/nft/{nft_id}",
             "attributes": [
                 {"trait_type": item["name"], "value": item["rarity"]}
                 for item in combination
