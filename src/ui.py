@@ -6,7 +6,6 @@ from PIL import Image, ImageTk
 import json
 from generator import NFTGenerator
 
-
 class NFTGeneratorApp:
     def __init__(self, root):
         self.root = root
@@ -35,12 +34,6 @@ class NFTGeneratorApp:
         tk.Label(self.root, text="Quantidade Máxima de NFTs:").pack(pady=5)
         self.max_nfts_entry = tk.Entry(self.root)
         self.max_nfts_entry.pack(pady=5)
-
-        self.unique_var = tk.BooleanVar()
-        self.exotic_var = tk.BooleanVar()
-
-        tk.Checkbutton(self.root, text="Combinações Únicas", variable=self.unique_var).pack(pady=5)
-        tk.Checkbutton(self.root, text="Apenas Itens Exóticos", variable=self.exotic_var).pack(pady=5)
 
         generate_button = tk.Button(self.root, text="Gerar NFTs", command=self.start_generation_thread)
         generate_button.pack(pady=20)
@@ -102,40 +95,16 @@ class NFTGeneratorApp:
             messagebox.showerror("Erro", "Insira um número válido para a quantidade máxima de NFTs!")
             return
 
-        unique_only = self.unique_var.get()
-        exotic_only = self.exotic_var.get()
-
         if not self.layer_dirs:
             messagebox.showerror("Erro", "Nenhuma camada foi selecionada!")
             return
 
-        self.generator = NFTGenerator(unique_only=unique_only, exotic_only=exotic_only)
+        self.generator = NFTGenerator()
         try:
-            filtered_layers = self.filter_layers(unique_only, exotic_only)
-            self.generator.generate(filtered_layers, self.output_dir, max_nfts=max_nfts, callback=self.update_preview)
+            self.generator.generate(self.layer_dirs, self.output_dir, max_nfts=max_nfts, callback=self.update_preview)
             messagebox.showinfo("Sucesso", "NFTs geradas com sucesso!")
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao gerar NFTs: {e}")
-
-    def filter_layers(self, unique_only, exotic_only):
-        filtered_layers = []
-
-        if exotic_only:
-            for layer in self.layer_dirs:
-                layer_items = [item for item in layer["items"] if item["rarity"] == "Exotic"]
-                if layer_items:
-                    filtered_layers.append({"name": layer["name"], "path": layer["path"], "items": layer_items})
-        elif unique_only:
-            for layer in self.layer_dirs:
-                if layer["items"]:
-                    base_rarity = layer["items"][0]["rarity"]
-                    layer_items = [item for item in layer["items"] if item["rarity"] == base_rarity]
-                    if layer_items:
-                        filtered_layers.append({"name": layer["name"], "path": layer["path"], "items": layer_items})
-        else:
-            filtered_layers = self.layer_dirs
-
-        return filtered_layers
 
     def update_preview(self, image_path):
         try:
@@ -152,8 +121,6 @@ class NFTGeneratorApp:
             "layers": [{"name": layer["name"], "path": layer["path"]} for layer in self.layer_dirs],
             "output_dir": self.output_dir,
             "max_nfts": self.max_nfts_entry.get(),
-            "unique_only": self.unique_var.get(),
-            "exotic_only": self.exotic_var.get()
         }
 
         file_path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
@@ -182,9 +149,6 @@ class NFTGeneratorApp:
 
                 self.max_nfts_entry.delete(0, tk.END)
                 self.max_nfts_entry.insert(0, config.get("max_nfts", ""))
-
-                self.unique_var.set(config.get("unique_only", False))
-                self.exotic_var.set(config.get("exotic_only", False))
 
                 messagebox.showinfo("Sucesso", "Configurações carregadas com sucesso!")
 

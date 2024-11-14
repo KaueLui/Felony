@@ -1,7 +1,7 @@
 import os
 import random
-import itertools
 import json
+import csv
 from PIL import Image
 from utils import create_metadata, create_nft_image
 
@@ -15,9 +15,8 @@ class NFTGenerator:
         "Exotic": 0.01,
     }
 
-    def __init__(self, unique_only=False, exotic_only=False):
-        self.unique_only = unique_only
-        self.exotic_only = exotic_only
+    def __init__(self):
+        pass
 
     def generate(self, layers, output_dir, max_nfts=None, callback=None):
         image_output_dir = os.path.join(output_dir, "nfts")
@@ -26,43 +25,44 @@ class NFTGenerator:
         os.makedirs(metadata_output_dir, exist_ok=True)
         
         layer_files = self.load_layer_files_with_rarity(layers)
-
-        # Exibição simplificada das camadas e raridades carregadas
-        print("Camadas e raridades carregadas:")
-        for i, layer in enumerate(layer_files):
-            raridades_disponiveis = [raridade for raridade in layer.keys() if layer[raridade]]
-            print(f"Camada {i + 1}: {raridades_disponiveis}")
         
         nft_id = 1
+        metadata_list = []  # Para coletar todos os metadados para o CSV
 
-        if self.unique_only:
-            for rarity in self.rarity_probabilities.keys():
-                if not all(rarity in layer and layer[rarity] for layer in layer_files):
-                    print(f"Erro: Camada com raridade '{rarity}' está vazia em uma ou mais camadas.")
-                    continue
-                
-                combinations = itertools.product(*[layer[rarity] for layer in layer_files])
-                for combination in combinations:
-                    if nft_id > max_nfts:
-                        break
-                    self.create_nft(nft_id, combination, image_output_dir, metadata_output_dir, callback)
-                    nft_id += 1
-
-        elif self.exotic_only:
-            combinations = [random.choice(layer["Exotic"]) for layer in layer_files if "Exotic" in layer and layer["Exotic"]]
-            if not combinations:
-                raise ValueError("Nenhum item exótico encontrado em alguma das camadas.")
-            while nft_id <= max_nfts:
-                self.create_nft(nft_id, combinations, image_output_dir, metadata_output_dir, callback)
-                nft_id += 1
-
-        else:
-            while nft_id <= max_nfts:
-                combination = [self.select_random_item_with_rarity(layer) for layer in layer_files]
-                print("Combinação gerada:", [(item["name"], item["rarity"]) for item in combination]) # Debug: imprime a combinação para verificação
-                self.create_nft(nft_id, combination, image_output_dir, metadata_output_dir, callback)
-                nft_id += 1
-
+        while nft_id <= max_nfts:
+            combination = [self.select_random_item_with_rarity(layer) for layer in layer_files]
+            output_path = os.path.join(image_output_dir, f"NFT_{nft_id}.png")
+            metadata_path = os.path.join(metadata_output_dir, f"NFT_{nft_id}.json")
+            
+            # Cria a imagem NFT
+            create_nft_image(combination, output_path)
+            
+            # Gera metadados no formato ERC-1155 (sem o campo "decimals")
+            metadata = self.create_metadata(nft_id, combination)
+            
+            # Escreve o JSON do metadata individualmente
+            with open(metadata_path, "w") as f:
+                json.dump(metadata, f, indent=4)
+            
+            metadata_list.append(metadata)  # Adiciona à lista de metadados para o CSV
+            
+            # Log da geração de cada NFT no terminal
+            print(f"NFT {nft_id} gerada: {metadata['name']} com atributos: {metadata['attributes']}")
+            
+            if callback:
+                callback(output_path)
+            
+            nft_id += 1
+        
+        # Gera o arquivo CSV com todos os metadados
+        csv_path = os.path.join(output_dir, "metadata.csv")
+        with open(csv_path, "w", newline='') as csvfile:
+            fieldnames = ["name", "description", "image", "attributes"]
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for metadata in metadata_list:
+                writer.writerow(metadata)
+        
         print("Geração de NFTs concluída.")
 
     def load_layer_files_with_rarity(self, layers):
@@ -94,17 +94,14 @@ class NFTGenerator:
             else:
                 raise ValueError("Nenhum item disponível para essa camada e raridade.")
 
-    def create_nft(self, nft_id, combination, image_output_dir, metadata_output_dir, callback):
-        output_path = os.path.join(image_output_dir, f"NFT_{nft_id}.png")
-        metadata_path = os.path.join(metadata_output_dir, f"NFT_{nft_id}.json")
-
-        print(f"Gerando NFT {nft_id}...")
-
-        create_nft_image(combination, output_path)
-        metadata = create_metadata(nft_id, combination)
-        
-        with open(metadata_path, "w") as f:
-            json.dump(metadata, f, indent=4)
-
-        if callback:
-            callback(output_path)
+    def create_metadata(self, nft_id, combination):
+        metadata = {
+            "name": f"NFT #{nft_id}",
+            "description": "Uma NFT única",
+            "image": f"ipfs://NFT_{nft_id}.png",
+            "attributes": [
+                {"trait_type": item["name"], "value": item["rarity"]}
+                for item in combination
+            ]
+        }
+        return metadata
