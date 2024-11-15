@@ -4,4 +4,4 @@ output_nfts/
 output/
 node_modules
 package-lock.json
-json/
+json/index.json

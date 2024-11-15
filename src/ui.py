@@ -188,7 +188,7 @@ class NFTGeneratorApp:
     def update_preview(self, image_path):
         try:
             image = Image.open(image_path)
-            image = image.resize((400, 400), Image.LANCZOS)
+            image = image.resize((600, 600), Image.LANCZOS)
             image_tk = ImageTk.PhotoImage(image)
             self.preview_canvas.config(image=image_tk)
             self.preview_canvas.image = image_tk
