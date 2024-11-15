@@ -26,7 +26,7 @@ def check_for_updates():
             return
 
         # Versão atual do programa
-        current_version = "1.0.0"  # Atualize para a versão atual do programa
+        current_version = "1.5.1"  # Atualize para a versão atual do programa
         if remote_version > current_version:
             user_response = input(f"Nova versão {remote_version} disponível! Deseja atualizar? (s/n): ")
             if user_response.lower() == 's':
