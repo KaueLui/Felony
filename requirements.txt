@@ -1,3 +1,4 @@
 pillow
 pil
 customtkinter
+requests
