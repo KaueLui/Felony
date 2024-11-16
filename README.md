@@ -42,3 +42,18 @@ This project is an NFT generator with a graphical interface. It allows you to cr
 ## Requirements
 - Python 3.x
 - Pillow
+
+## Contribution and Deployment
+
+This project is licensed under the MIT License, which means you are free to:
+
+- Use the code for any purpose.
+- Modify and improve the project.
+- Deploy the project in your own environments.
+
+### How to contribute
+1. Fork this repository.
+2. Clone your fork to your local environment:
+   ```bash
+   git clone https://github.com/KaueLui/Felony.git
+

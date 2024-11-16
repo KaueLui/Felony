@@ -10,9 +10,9 @@ class NFTGenerator:
         "Common": 0.50,
         "Rare": 0.25,
         "Epic": 0.15,
-        "Legendary": 0.07,
-        "Mythic": 0.02,
-        "Exotic": 0.01,
+        "Legendary": 0.08,
+        "Mythic": 0.05,
+        "Exotic": 0.02,
     }
 
     def __init__(self):
@@ -40,22 +40,38 @@ class NFTGenerator:
 
         nft_id = 1
         metadata_list = []  # Para coletar todos os metadados para o CSV
+        special_rarities = list(self.rarity_probabilities.keys())  # Raridades disponíveis para geração especial
+        next_special_nft = random.randint(5, 15)  # Número aleatório para a primeira NFT especial
 
         while nft_id <= max_nfts:
-            # Garante uma combinação única para cada NFT
-            combination = None
-            combination_tuple = None
-            attempt_count = 0
-            while combination_tuple is None or combination_tuple in self.generated_combinations:
-                if attempt_count > 100:
-                    raise ValueError("Não foi possível gerar uma combinação única após 100 tentativas.")
-                combination = [self.select_random_item_with_rarity(layer) for layer in layer_files]
-                # Converte a combinação para uma tupla hashável
-                combination_tuple = tuple((item["name"], item["rarity"], item["file"]) for item in combination)
-                attempt_count += 1
+            # Verifica se é hora de gerar uma NFT especial
+            is_special = nft_id == next_special_nft
+            
+            if is_special:
+                special_rarity = random.choice(special_rarities)  # Escolhe uma raridade especial
+                print(f"Gerando NFT especial com raridade '{special_rarity}'!")
+                combination = [
+                    random.choice(layer_files[layer][special_rarity])
+                    for layer in range(len(layer_files))
+                    if special_rarity in layer_files[layer]
+                ]
+                # Define o próximo NFT especial de forma aleatória
+                next_special_nft = nft_id + random.randint(5, 15)
+            else:
+                # Gera uma combinação aleatória e única
+                combination = None
+                combination_tuple = None
+                attempt_count = 0
+                while combination_tuple is None or combination_tuple in self.generated_combinations:
+                    if attempt_count > 100:
+                        raise ValueError("Não foi possível gerar uma combinação única após 100 tentativas.")
+                    combination = [self.select_random_item_with_rarity(layer) for layer in layer_files]
+                    # Converte a combinação para uma tupla hashável
+                    combination_tuple = tuple((item["name"], item["rarity"], item["file"]) for item in combination)
+                    attempt_count += 1
 
-            # Registra a combinação como única
-            self.generated_combinations.add(combination_tuple)
+                # Registra a combinação como única
+                self.generated_combinations.add(combination_tuple)
 
             # Define o caminho de saída para a imagem e o metadata
             output_path = os.path.join(image_output_dir, f"NFT_{nft_id}.{image_format}")
