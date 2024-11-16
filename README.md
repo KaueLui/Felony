@@ -56,4 +56,13 @@ This project is licensed under the MIT License, which means you are free to:
 2. Clone your fork to your local environment:
    ```bash
    git clone https://github.com/KaueLui/Felony.git
+3. Create a new branch to work on your changes: 
+     ```bash
+   git checkout -b my-new-feature
+4. After making your changes, submit them:
+    ```bash
+    git add .
+    git commit -m "Description of the change"
+    git push origin my-new-feature
+5. Open a Pull Request in the original repository
 
